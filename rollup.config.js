@@ -9,7 +9,7 @@ const config = [
       {
         file: "dist/bundle.umd.js",
         format: "umd",
-        name: "easypdf",
+        name: "easy-pdfkit",
         sourcemap: true,
       },
       {
