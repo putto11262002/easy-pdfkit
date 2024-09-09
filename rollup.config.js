@@ -31,7 +31,6 @@ const config = [
     ],
   },
   {
-    external: ["pdfkit"],
     input: "dist/types/index.d.ts",
     output: {
       file: "dist/bundle.d.ts",

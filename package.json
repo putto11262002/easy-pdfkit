@@ -10,9 +10,6 @@
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js -w"
   },
-  "files": [
-    "dist"
-  ],
   "license": "MIT",
   "author": "Put Suthisrisinlpa",
   "devDependencies": {
@@ -27,7 +24,7 @@
     "rollup-plugin-typescript2": "^0.36.0",
     "typescript": "^5.0.0"
   },
-  "peerDependencies": {
+  "dependencies": {
     "pdfkit": "^0.15.0"
   }
 }
