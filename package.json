@@ -5,7 +5,7 @@
   "main": "./dist/bundle.umd.js",
   "types": "./dist/bundle.d.ts",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "files": [
     "dist",
     "src/**/*.d.ts"
