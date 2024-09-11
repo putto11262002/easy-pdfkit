@@ -5,7 +5,11 @@
   "main": "./dist/bundle.umd.js",
   "types": "./dist/bundle.d.ts",
   "type": "module",
-  "version": "1.0.0",
+  "version": "0.0.1",
+  "files": [
+    "dist",
+    "src/**/*.d.ts"
+  ],
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js -w"
