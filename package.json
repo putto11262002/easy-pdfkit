@@ -6,10 +6,6 @@
   "types": "./dist/bundle.d.ts",
   "type": "module",
   "version": "0.1.1",
-  "files": [
-    "dist",
-    "src/**/*.d.ts"
-  ],
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js -w"
