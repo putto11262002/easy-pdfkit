@@ -46,6 +46,7 @@ export const defaultFixedLayoutTableOpts = {
   header: true,
   borders: true,
 };
+
 export type CellRenderers<CV, V = CV | DefaultMultiType> = (
   doc: PDFDoc<CV>,
   args: { width: number; x: number; y: number },
@@ -102,7 +103,11 @@ export function renderFixedLayoutTable<
     rowX = updatedPos.x;
   }
 
-  data.forEach((row) => {
+  const sortedKeyData = sortObjectsByKeyOrder(
+    data,
+    opts.columns.map((col) => col.key),
+  );
+  sortedKeyData.forEach((row) => {
     const updatedPos = renderRow({
       cells: Object.values(row),
       x: rowX,
@@ -147,8 +152,7 @@ function renderRow<
   const rowY: number = y;
   let offsetX: number = rowX;
   let cellX: number;
-  let cellY: number =
-    rowY + tableOpts.cellPaddings.top + doc.currentLineGap / 4;
+  let cellY: number = rowY + tableOpts.cellPaddings.top;
 
   const heights = cells.map((cell, i) => {
     let height: number;
@@ -160,6 +164,7 @@ function renderRow<
 
     let cellValue: FixedLayoutTableCellValue<V>;
     let cellTextOpts: TextOptions | undefined;
+
     if (typeof cell === "object" && cell !== null && "value" in cell) {
       cellValue = cell.value;
       textOpts = cell.textOpts;
@@ -169,7 +174,6 @@ function renderRow<
 
     try {
       const formattedText = doc.formatText(cellValue as unknown as CV);
-
       height = doc.heightOfStringWithoutTailingLineGap(formattedText, {
         width: cellWidth,
       });
@@ -181,6 +185,9 @@ function renderRow<
       });
     } catch (c) {
       if (typeof cellValue === "function") {
+        // Move the cursor to the left top cornor of the cell
+        doc.y = cellY;
+        doc.x = cellX;
         height = (cellValue as CellRenderers<CV>)(doc, {
           width: cellWidth,
           x: cellX,
@@ -255,4 +262,18 @@ function mergeOptions<T extends readonly FixedLayoutTableColumn<string>[]>(
           }
         : defaults.cellPaddings,
   };
+}
+function sortObjectsByKeyOrder(
+  objects: Record<string, any>[],
+  orderedKeys: string[],
+): Record<string, any>[] {
+  return objects.map((obj) => {
+    const sortedObj: Record<string, any> = {};
+    orderedKeys.forEach((key) => {
+      if (obj.hasOwnProperty(key)) {
+        sortedObj[key] = obj[key];
+      }
+    });
+    return sortedObj;
+  });
 }

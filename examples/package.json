@@ -1,0 +1,14 @@
+{
+  "name": "examples",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "easy-pdfkit": "^0.1.4"
+  }
+}
