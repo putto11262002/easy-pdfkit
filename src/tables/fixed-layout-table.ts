@@ -1,3 +1,4 @@
+import { FixedLayoutTableCellValue } from "easy-pdfkit";
 import type { DefaultMultiType, PDFDoc, TextOptions } from "../pdf-doc";
 
 export type TableKeys<T extends readonly FixedLayoutTableColumn<string>[]> =
@@ -47,36 +48,36 @@ export const defaultFixedLayoutTableOpts = {
   borders: true,
 };
 
-export type CellRenderers<CV, V = CV | DefaultMultiType> = (
-  doc: PDFDoc<CV>,
-  args: { width: number; x: number; y: number },
-) => number;
-
-export type FixedLayoutTableCellValue<CV, V = CV | DefaultMultiType> =
-  | V
-  | CellRenderers<V>;
-
-export type FixedLayoutTableCellData<CV, V = CV | DefaultMultiType> =
-  | {
-      value: FixedLayoutTableCellValue<V>;
-      textOpts?: TextOptions;
-    }
-  | FixedLayoutTableCellValue<V>;
+export type FixedLayoutTableCellData<CV, V extends CV | DefaultMultiType> = V;
 
 export type FixedLayoutTableData<
   T extends readonly FixedLayoutTableColumn<string>[],
   CV,
-  V = CV | DefaultMultiType,
-> = Record<TableKeys<T>, FixedLayoutTableCellData<CV>>[];
+  V extends CV | DefaultMultiType = CV | DefaultMultiType,
+> = Record<TableKeys<T>, FixedLayoutTableCellData<CV, V>>[];
+
+type Table<
+  T extends readonly FixedLayoutTableColumn<string>[],
+  CV,
+  V extends CV | DefaultMultiType = CV | DefaultMultiType,
+> = {
+  opts: _FixedLayoutTableOpts<T>;
+  doc: PDFDoc<CV>;
+  data: FixedLayoutTableData<T, CV, V>;
+  columnsY: number[];
+  columnsWidth: number[];
+  rowX: number;
+  rowY: number;
+};
 
 export function renderFixedLayoutTable<
   T extends readonly FixedLayoutTableColumn<string>[],
   CV,
-  V = CV | DefaultMultiType,
+  V extends CV | DefaultMultiType = CV | DefaultMultiType,
 >(
   doc: PDFDoc<CV>,
   _opts: FixedLayoutTableOpts<T>,
-  data: FixedLayoutTableData<T, V>,
+  data: FixedLayoutTableData<T, CV, V>,
 ) {
   const opts = mergeOptions(_opts, {
     ...defaultFixedLayoutTableOpts,
@@ -84,149 +85,165 @@ export function renderFixedLayoutTable<
     x: doc.x,
     y: doc.y,
   });
-  const columnsWidths = getColumnWidths(opts.columns, opts.width);
 
-  let rowY = opts.y;
-  let rowX = opts.x;
+  const columnsWidth = getColumnWidths(opts.columns, opts.width);
+
+  const table: Table<T, CV, V> = {
+    opts,
+    data,
+    columnsY: getColumnsY(columnsWidth, opts.x),
+    columnsWidth,
+    doc,
+    rowX: opts.x,
+    rowY: opts.y,
+  };
 
   if (opts.header) {
-    const updatedPos = renderRow<T, CV>({
-      cells: opts.columns.map((col) => col.header || col.key),
-      textOpts: { underline: true },
-      x: rowX,
-      y: rowY,
-      doc,
-      tableOpts: opts,
-      columnsWidth: columnsWidths,
+    renderRow<T, CV>({
+      table,
+      cells: table.opts.columns.map((column) => column.header || column.key),
     });
-    rowY = updatedPos.y;
-    rowX = updatedPos.x;
   }
 
   const sortedKeyData = sortObjectsByKeyOrder(
     data,
     opts.columns.map((col) => col.key),
   );
+
   sortedKeyData.forEach((row) => {
-    const updatedPos = renderRow({
+    renderRow({
       cells: Object.values(row),
-      x: rowX,
-      y: rowY,
-      doc,
-      tableOpts: opts,
-      columnsWidth: columnsWidths,
+      table,
     });
-    rowY = updatedPos.y;
-    rowX = updatedPos.x;
   });
 
-  // Move cursor to one line below the table
-  doc.y = rowY;
-  doc.x = opts.x;
   doc.moveDown();
 }
 
-function renderRow<
+function getColumnsY(columnWidth: number[], offset?: number) {
+  const columnX: number[] = [];
+  let offsetX: number = offset ?? 0;
+
+  columnWidth.forEach((width) => {
+    columnX.push(offsetX);
+    offsetX += width;
+  });
+
+  return columnX;
+}
+
+function getRowHeight<
   T extends readonly FixedLayoutTableColumn<string>[],
   CV,
-  V = CV | DefaultMultiType,
+  V extends CV | DefaultMultiType,
 >({
   tableOpts,
   cells,
-  doc,
-  textOpts,
   columnsWidth,
   x,
-  y,
+  formatText,
+  heightOfString,
 }: {
-  cells: FixedLayoutTableCellData<V>[];
-  doc: PDFDoc<CV>;
+  cells: FixedLayoutTableCellData<CV, V>[];
   tableOpts: _FixedLayoutTableOpts<T>;
   columnsWidth: number[];
   x: number;
-  y: number;
-  textOpts?: TextOptions;
-}): { x: number; y: number } {
+  heightOfString: (s: string, opts?: TextOptions) => number;
+  formatText: (s: V) => string;
+}) {
   // determine row height by finding the tallest cell
   const rowX: number = x;
-  const rowY: number = y;
   let offsetX: number = rowX;
-  let cellX: number;
-  let cellY: number = rowY + tableOpts.cellPaddings.top;
 
   const heights = cells.map((cell, i) => {
-    let height: number;
-
-    const cellWidth =
+    const contentWidth =
       columnsWidth[i] -
       (tableOpts.cellPaddings.left + tableOpts.cellPaddings.right);
-    cellX = offsetX + tableOpts.cellPaddings.left;
 
-    let cellValue: FixedLayoutTableCellValue<V>;
-    let cellTextOpts: TextOptions | undefined;
-
-    if (typeof cell === "object" && cell !== null && "value" in cell) {
-      cellValue = cell.value;
-      textOpts = cell.textOpts;
-    } else {
-      cellValue = cell;
-    }
-
-    try {
-      const formattedText = doc.formatText(cellValue as unknown as CV);
-      height = doc.heightOfStringWithoutTailingLineGap(formattedText, {
-        width: cellWidth,
-      });
-
-      doc.multiTypeText(formattedText, cellX, cellY, {
-        ...textOpts,
-        ...cellTextOpts,
-        width: cellWidth,
-      });
-    } catch (c) {
-      if (typeof cellValue === "function") {
-        // Move the cursor to the left top cornor of the cell
-        doc.y = cellY;
-        doc.x = cellX;
-        height = (cellValue as CellRenderers<CV>)(doc, {
-          width: cellWidth,
-          x: cellX,
-          y: cellY,
-        });
-      } else {
-        throw new Error("Invalid cell renderer function provided.");
-      }
-    }
+    const formattedText = formatText(cell);
+    const height = heightOfString(formattedText, {
+      width: contentWidth,
+    });
 
     offsetX += columnsWidth[i];
     return height;
   });
 
-  const rowHeight =
+  const maxHeight =
     Math.max(...heights) +
     tableOpts.cellPaddings.top +
     tableOpts.cellPaddings.bottom;
 
-  if (tableOpts.borders) {
-    // Draw row borders
-    doc.rect(rowX, rowY, tableOpts.width, rowHeight).stroke();
+  return maxHeight;
+}
 
-    offsetX = rowX;
-    // Draw right cell border
-    cells.forEach((_, i) => {
-      if (i !== cells.length - 1) {
-        doc
-          .moveTo(offsetX + columnsWidth[i], rowY)
-          .lineTo(offsetX + columnsWidth[i], rowY + rowHeight)
-          .stroke();
-        offsetX += columnsWidth[i];
-      }
-    });
+function heightOfStringClosur<CV, V extends CV | DefaultMultiType>(
+  doc: PDFDoc<CV, V>,
+) {
+  return (s: string, opts?: TextOptions) =>
+    doc.heightOfStringWithoutTailingLineGap(s, opts);
+}
+
+function formatTextCloser<CV, V extends CV | DefaultMultiType>(
+  doc: PDFDoc<CV, V>,
+) {
+  return (v: FixedLayoutTableCellValue<CV, V>) => doc.formatText(v);
+}
+
+function renderRow<
+  T extends readonly FixedLayoutTableColumn<string>[],
+  CV,
+  V extends CV | DefaultMultiType = CV | DefaultMultiType,
+>({
+  cells,
+  table,
+}: {
+  cells: FixedLayoutTableCellValue<CV, V>[];
+  table: Table<T, CV, V>;
+}) {
+  const rowHeight = getRowHeight({
+    x: table.rowX,
+    cells: cells,
+    tableOpts: table.opts,
+    heightOfString: heightOfStringClosur(table.doc),
+    formatText: formatTextCloser(table.doc),
+    columnsWidth: table.columnsWidth,
+  });
+
+  // check if row fits in the page
+  if (rowHeight + table.rowY > table.doc.getMarginAdjustedHeight()) {
+    table.doc.addPage();
+    table.rowY = table.doc.y;
   }
 
-  doc.y = rowY + rowHeight;
-  doc.x = rowX;
-  return { x: doc.x, y: doc.y };
+  cells.map((value, i) => {
+    const cellX = table.columnsY[i] + table.opts.cellPaddings.left;
+    const cellY = table.rowY + table.opts.cellPaddings.top;
+    const cellWidth =
+      table.columnsWidth[i] -
+      (table.opts.cellPaddings.left + table.opts.cellPaddings.right);
+    table.doc.multiTypeText(table.doc.formatText(value), cellX, cellY, {
+      width: cellWidth,
+    });
+  });
+
+  // Render borders
+  if (table.opts.borders) {
+    table.doc
+      .rect(table.rowX, table.rowY, table.opts.width, rowHeight)
+      .stroke();
+
+    for (let i = 1; i < cells.length; i++) {
+      table.doc
+        .moveTo(table.columnsY[i], table.rowY)
+        .lineTo(table.columnsY[i], table.rowY + rowHeight)
+        .stroke();
+    }
+  }
+
+  // move rowY to the start of the next row
+
+  table.rowY += rowHeight;
 }
 
 function getColumnWidths<T extends readonly FixedLayoutTableColumn<string>[]>(

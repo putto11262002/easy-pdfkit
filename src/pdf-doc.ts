@@ -111,8 +111,8 @@ export const DEFAULT_TEXT_SIZES: TextSizesMap = {
 const DEFAULT_MARGINS = {
   top: 50,
   bottom: 50,
-  left: 72,
-  right: 72,
+  left: 50,
+  right: 50,
 };
 
 const DEFAULT_COLOR_PALETTE = {
@@ -120,7 +120,7 @@ const DEFAULT_COLOR_PALETTE = {
   secondary: "#808080",
 };
 
-const DEFAULT_LINE_GAP = 2;
+const DEFAULT_LINE_GAP = 1;
 
 export type DefaultMultiType =
   | string
@@ -395,8 +395,7 @@ export class PDFDoc<
   getMarginAdjustedHeight() {
     return (
       (this.page?.height ?? this.options.size[1]) -
-      this.options.margins.top -
-      this.options.margins.bottom
+      (this.options.margins.top + this.options.margins.bottom)
     );
   }
 

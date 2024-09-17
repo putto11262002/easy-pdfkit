@@ -55,8 +55,6 @@ const data = [
   },
 ];
 
-doc.normal("Display data", { underline: true });
-
 doc.fixedLayoputTable(
   {
     columns: [
@@ -67,66 +65,6 @@ doc.fixedLayoputTable(
     ],
   },
   data,
-);
-
-doc.normal("Format page into columns with custom renderer", {
-  underline: true,
-});
-
-doc.fixedLayoputTable(
-  {
-    columns: [{ key: "left" }, { key: "right" }] as const,
-    header: false,
-    borders: false,
-  },
-  [
-    {
-      left: (doc, { width, y, x }) => {
-        const initialY = y;
-        doc.text("Left - Render anything here", x, y, {
-          width,
-          align: "center",
-        });
-        return doc.heightOfStringWithoutTailingLineGap("Left", { width });
-      },
-      right: (doc, { width, y, x }) => {
-        const initialY = y;
-        doc.text("Right - Render anything here", x, y, {
-          width,
-          align: "center",
-        });
-        return doc.heightOfStringWithoutTailingLineGap("Right", { width });
-      },
-    },
-  ],
-);
-
-doc.fixedLayoputTable(
-  {
-    columns: [{ key: "left" }, { key: "middle" }, { key: "right" }] as const,
-    header: false,
-    borders: false,
-  },
-  [
-    {
-      left: (doc, { width, y, x }) => {
-        const initialY = y;
-        doc.text("Left", x, y, { width, align: "center" });
-        return Math.abs(initialY - doc.y) - doc.currentLineGap; // account for the tailing line gap
-      },
-
-      middle: (doc, { width, y, x }) => {
-        const initialY = y;
-        doc.text("Left", x, y, { width, align: "center" });
-        return Math.abs(initialY - doc.y) - doc.currentLineGap; // account for the tailing line gap
-      },
-      right: (doc, { width, y, x }) => {
-        const initialY = y;
-        doc.text("Right", x, y, { width, align: "center" });
-        return Math.abs(initialY - doc.y) - doc.currentLineGap; // account for the tailing line gap
-      },
-    },
-  ],
 );
 
 doc.end();
