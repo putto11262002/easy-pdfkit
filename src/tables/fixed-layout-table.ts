@@ -1,69 +1,15 @@
-import { FixedLayoutTableCellValue } from "easy-pdfkit";
+import { _TableConfig, TableCellValue, TableColumn, TableData } from "./table";
 import type { DefaultMultiType, PDFDoc, TextOptions } from "../pdf-doc";
-
-export type TableKeys<T extends readonly FixedLayoutTableColumn<string>[]> =
-  T[number]["key"]; // Extract union of all literal keys
-
-export type FixedLayoutTableColumn<T extends string> = {
-  header?: string;
-  kalign?: "left" | "center" | "right";
-  key: T; // T represents the literal type for the key
-  colSpan?: number;
-};
-
-export type FixedLayoutTableOpts<
-  T extends readonly FixedLayoutTableColumn<string>[],
-> = {
-  width?: number;
-  x?: number;
-  y?: number;
-  cellPaddings?:
-    | number
-    | { top: number; right: number; bottom: number; left: number };
-  header?: boolean;
-  columns: T; // Require readonly array with literal string keys
-  borders?: boolean;
-};
-
-type _FixedLayoutTableOpts<
-  T extends readonly FixedLayoutTableColumn<string>[],
-> = {
-  width: number;
-  x: number;
-  y: number;
-  cellPaddings: { top: number; right: number; bottom: number; left: number };
-  header: boolean;
-  columns: T;
-  borders: boolean;
-};
-
-export const defaultFixedLayoutTableOpts = {
-  cellPaddings: {
-    top: 5,
-    right: 5,
-    bottom: 5,
-    left: 5,
-  },
-  header: true,
-  borders: true,
-};
-
-export type FixedLayoutTableCellData<CV, V extends CV | DefaultMultiType> = V;
-
-export type FixedLayoutTableData<
-  T extends readonly FixedLayoutTableColumn<string>[],
-  CV,
-  V extends CV | DefaultMultiType = CV | DefaultMultiType,
-> = Record<TableKeys<T>, FixedLayoutTableCellData<CV, V>>[];
+import { sortObjectsByKeyOrder } from "./utils";
 
 type Table<
-  T extends readonly FixedLayoutTableColumn<string>[],
+  T extends readonly TableColumn<string>[],
   CV,
   V extends CV | DefaultMultiType = CV | DefaultMultiType,
 > = {
-  opts: _FixedLayoutTableOpts<T>;
+  opts: _TableConfig<T>;
   doc: PDFDoc<CV>;
-  data: FixedLayoutTableData<T, CV, V>;
+  data: TableData<T, CV, V>;
   columnsY: number[];
   columnsWidth: number[];
   rowX: number;
@@ -71,34 +17,30 @@ type Table<
 };
 
 export function renderFixedLayoutTable<
-  T extends readonly FixedLayoutTableColumn<string>[],
+  T extends readonly TableColumn<string>[],
   CV,
-  V extends CV | DefaultMultiType = CV | DefaultMultiType,
->(
-  doc: PDFDoc<CV>,
-  _opts: FixedLayoutTableOpts<T>,
-  data: FixedLayoutTableData<T, CV, V>,
-) {
-  const opts = mergeOptions(_opts, {
-    ...defaultFixedLayoutTableOpts,
-    width: doc.getMarginAdjustedWidth(),
-    x: doc.x,
-    y: doc.y,
-  });
+>({
+  doc,
+  config,
+  data,
+}: {
+  doc: PDFDoc<CV>;
+  config: _TableConfig<T>;
+  data: TableData<T, CV>;
+}) {
+  const columnsWidth = getColumnWidths(config.columns, config.width);
 
-  const columnsWidth = getColumnWidths(opts.columns, opts.width);
-
-  const table: Table<T, CV, V> = {
-    opts,
+  const table: Table<T, CV> = {
+    opts: config,
     data,
-    columnsY: getColumnsY(columnsWidth, opts.x),
+    columnsY: getColumnsY(columnsWidth, config.x),
     columnsWidth,
     doc,
-    rowX: opts.x,
-    rowY: opts.y,
+    rowX: config.x,
+    rowY: config.y,
   };
 
-  if (opts.header) {
+  if (config.header) {
     renderRow<T, CV>({
       table,
       cells: table.opts.columns.map((column) => column.header || column.key),
@@ -107,7 +49,7 @@ export function renderFixedLayoutTable<
 
   const sortedKeyData = sortObjectsByKeyOrder(
     data,
-    opts.columns.map((col) => col.key),
+    config.columns.map((col) => col.key),
   );
 
   sortedKeyData.forEach((row) => {
@@ -133,7 +75,7 @@ function getColumnsY(columnWidth: number[], offset?: number) {
 }
 
 function getRowHeight<
-  T extends readonly FixedLayoutTableColumn<string>[],
+  T extends readonly TableColumn<string>[],
   CV,
   V extends CV | DefaultMultiType,
 >({
@@ -144,8 +86,8 @@ function getRowHeight<
   formatText,
   heightOfString,
 }: {
-  cells: FixedLayoutTableCellData<CV, V>[];
-  tableOpts: _FixedLayoutTableOpts<T>;
+  cells: TableCellValue<CV, V>[];
+  tableOpts: _TableConfig<T>;
   columnsWidth: number[];
   x: number;
   heightOfString: (s: string, opts?: TextOptions) => number;
@@ -187,18 +129,18 @@ function heightOfStringClosur<CV, V extends CV | DefaultMultiType>(
 function formatTextCloser<CV, V extends CV | DefaultMultiType>(
   doc: PDFDoc<CV, V>,
 ) {
-  return (v: FixedLayoutTableCellValue<CV, V>) => doc.formatText(v);
+  return (v: TableCellValue<CV, V>) => doc.formatText(v);
 }
 
 function renderRow<
-  T extends readonly FixedLayoutTableColumn<string>[],
+  T extends readonly TableColumn<string>[],
   CV,
   V extends CV | DefaultMultiType = CV | DefaultMultiType,
 >({
   cells,
   table,
 }: {
-  cells: FixedLayoutTableCellValue<CV, V>[];
+  cells: TableCellValue<CV, V>[];
   table: Table<T, CV, V>;
 }) {
   const rowHeight = getRowHeight({
@@ -246,7 +188,7 @@ function renderRow<
   table.rowY += rowHeight;
 }
 
-function getColumnWidths<T extends readonly FixedLayoutTableColumn<string>[]>(
+function getColumnWidths<T extends readonly TableColumn<string>[]>(
   cols: T,
   tableWidth: number,
 ): number[] {
@@ -260,37 +202,4 @@ function getColumnWidths<T extends readonly FixedLayoutTableColumn<string>[]>(
 
   const totalColSpan = colSpans.reduce((acc, cur) => acc + cur, 0);
   return colSpans.map((colSpan) => (colSpan / totalColSpan) * tableWidth);
-}
-
-function mergeOptions<T extends readonly FixedLayoutTableColumn<string>[]>(
-  input: FixedLayoutTableOpts<T>,
-  defaults: Omit<_FixedLayoutTableOpts<T>, "columns">,
-): _FixedLayoutTableOpts<T> {
-  return {
-    ...defaults,
-    ...input,
-    cellPaddings:
-      typeof input.cellPaddings === "number"
-        ? {
-            top: input.cellPaddings,
-            right: input.cellPaddings,
-            bottom: input.cellPaddings,
-            left: input.cellPaddings,
-          }
-        : defaults.cellPaddings,
-  };
-}
-function sortObjectsByKeyOrder(
-  objects: Record<string, any>[],
-  orderedKeys: string[],
-): Record<string, any>[] {
-  return objects.map((obj) => {
-    const sortedObj: Record<string, any> = {};
-    orderedKeys.forEach((key) => {
-      if (obj.hasOwnProperty(key)) {
-        sortedObj[key] = obj[key];
-      }
-    });
-    return sortedObj;
-  });
 }

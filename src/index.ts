@@ -1,2 +1,2 @@
-export * from "./pdf-doc";
+export * from "./pdf-doc"
 export * from "./tables";
