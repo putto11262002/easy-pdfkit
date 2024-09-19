@@ -5,6 +5,18 @@
   "main": "./dist/bundle.umd.js",
   "types": "./dist/bundle.d.ts",
   "type": "module",
+  "keywords": [
+    "pdf",
+    "pdf generator",
+    "document",
+    "pdf table",
+    "pdfkit",
+    "pdfkit wrapper"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/putto11262002/easy-pdfkit.git"
+  },
   "files": [
     "dist"
   ],
