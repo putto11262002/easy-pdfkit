@@ -20,7 +20,7 @@
   "files": [
     "dist"
   ],
-  "version": "0.1.6",
+  "version": "0.1.7",
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js -w"
