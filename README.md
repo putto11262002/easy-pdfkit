@@ -19,11 +19,11 @@ const doc = new EasyPDFKit();
 doc.heading("Hello, World!", 1);
 doc.heading("This is a PDF document", 2);
 
-// Add 
+// Add
 
 // Add table
 
-// 
+//
 ```
 
 ## Tables
@@ -37,7 +37,7 @@ const doc = new EasyPDFKit();
 
 doc.table(
   {
-  // Required: An array of objects that matches the shape define in the columns property
+    // Required: An array of objects that matches the shape define in the columns property
     columns: [
       { header: "Name", key: "name" },
       { header: "Age", key: "age" },
@@ -46,105 +46,110 @@ doc.table(
   [
     { name: "John Doe", age: 30 },
     { name: "Jane Doe", age: 25 },
-  ]
+  ],
 );
-
 ```
-Type definition for `TableConfig`: 
+
+Type definition for `TableConfig`:
 
 ```typescript
 /**
-* Configuration settings for rendering a table.
-* 
-* @template T - An array of `TableColumn` objects defining the columns of the table.
-*/
+ * Configuration settings for rendering a table.
+ *
+ * @template T - An array of `TableColumn` objects defining the columns of the table.
+ */
 export type TableConfig<T extends readonly TableColumn<string>[]> = {
- /**
-  * The width of the table in units. If not provided, the table will span the full width of the page.
-  * 
-  * @optional
-  */
- width?: number;
+  /**
+   * The width of the table in units. If not provided, the table will span the full width of the page.
+   *
+   * @optional
+   */
+  width?: number;
 
- /**
-  * The X coordinate (horizontal position) of the table. Defaults to the left margin if not provided.
-  * 
-  * @optional
-  */
- x?: number;
+  /**
+   * The X coordinate (horizontal position) of the table. Defaults to the left margin if not provided.
+   *
+   * @optional
+   */
+  x?: number;
 
- /**
-  * The Y coordinate (vertical position) of the table. Defaults to the current Y coordinate if not provided.
-  * 
-  * @optional
-  */
- y?: number;
+  /**
+   * The Y coordinate (vertical position) of the table. Defaults to the current Y coordinate if not provided.
+   *
+   * @optional
+   */
+  y?: number;
 
- /**
-  * Padding for each cell in the table. Can be a single number to apply equal padding to all sides,
-  * or an object specifying individual padding values for top, right, bottom, and left.
-  * 
-  * @example
-  * // Equal padding for all sides:
-  * cellPaddings: 5
-  * 
-  * // Custom padding for each side:
-  * cellPaddings: { top: 5, right: 10, bottom: 5, left: 10 }
-  * 
-  * @optional
-  */
- cellPaddings?: number | { top: number; right: number; bottom: number; left: number };
+  /**
+   * Padding for each cell in the table. Can be a single number to apply equal padding to all sides,
+   * or an object specifying individual padding values for top, right, bottom, and left.
+   *
+   * @example
+   * // Equal padding for all sides:
+   * cellPaddings: 5
+   *
+   * // Custom padding for each side:
+   * cellPaddings: { top: 5, right: 10, bottom: 5, left: 10 }
+   *
+   * @optional
+   */
+  cellPaddings?:
+    | number
+    | { top: number; right: number; bottom: number; left: number };
 
- /**
-  * Whether to render the header row of the table.
-  * 
-  * @default true
-  * @optional
-  */
- header?: boolean;
+  /**
+   * Whether to render the header row of the table.
+   *
+   * @default true
+   * @optional
+   */
+  header?: boolean;
 
- /**
-  * An array defining the configuration for each column in the table.
-  */
- columns: T;
+  /**
+   * An array defining the configuration for each column in the table.
+   */
+  columns: T;
 
- /**
-  * Whether to render borders around the table and its cells.
-  * 
-  * @default false
-  * @optional
-  */
- borders?: boolean;
+  /**
+   * Whether to render borders around the table and its cells.
+   *
+   * @default false
+   * @optional
+   */
+  borders?: boolean;
 
- /**
-  * The layout mode of the table, determining how the width of each column is calculated.
-  * 
-  * - `"fixed"`: The table's width is fixed, and each column has a fixed width determined by the following:
-  *   - If a `colSpan` property is provided for a column, its width will be calculated as:
-  *     (colSpan / totalColSpan) * tableWidth, where `totalColSpan` is the sum of all `colSpan` values in the `columns` array.
-  *   - If no `colSpan` is provided, the width will be evenly divided as: (1 / totalColumns) * tableWidth.
-  * 
-  * - `"auto"`: (Not yet implemented)
-  */
- layout: "auto" | "fixed";
+  /**
+   * The layout mode of the table, determining how the width of each column is calculated. The default is `"fixed"`.
+   *
+   * - `"fixed"`: The table's width is fixed, and each column has a fixed width determined by the following:
+   *   - If a `colSpan` property is provided for a column, its width will be calculated as:
+   *     (colSpan / totalColSpan) * tableWidth, where `totalColSpan` is the sum of all `colSpan` values in the `columns` array.
+   *   - If no `colSpan` is provided, the width will be evenly divided as: (1 / totalColumns) * tableWidth.
+   *
+   * - `"auto"`: (Not yet implemented)
+   *
+   * @default "fixed"
+   * @optional
+   */
+  layout?: "auto" | "fixed";
 };
 
 /**
  * Configuration for a table column.
- * 
+ *
  * @template T - A string type representing the key that will be used to extract values from the data object.
  */
 export type TableColumn<T extends string> = {
   /**
    * The header text to be displayed for the column. If not provided, the column will have no header text.
-   * 
+   *
    * @optional
    */
   header?: string;
 
   /**
    * Specifies the alignment of text within the column. Can be left-aligned, center-aligned, or right-aligned.
-   * 
+   *
    * @default "left"
    */
   align?: "left" | "center" | "right";
@@ -158,23 +163,21 @@ export type TableColumn<T extends string> = {
   /**
    * Specifies how many columns this column should span. Only applicable when the table layout is set to "fixed".
    * If not provided, the column will span 1 column by default.
-   * 
+   *
    * @example
    * // Column spans 2 columns
    * colSpan: 2
-   * 
+   *
    * @default 1
    * @optional
    */
   colSpan?: number;
 };
-
 ```
 
 ## Headings
 
 Easy-PDFKit provides methods for creating headings of various sizes. The following example demonstrates how to create headings h1, h2, h3, h4, h5, and h6.
-
 
 ```typescript
 
@@ -189,8 +192,6 @@ By default Easy-PDFKit comes with a built-in formatter which supports the follow
 ```
 
 Although the type is define for the argument of the format function however, the value is not type checked. It is the responsibility of the developer to ensure that the value passed to the format function can in fact be formatted by the function.
-
-
 
 ## PDFKit
 
