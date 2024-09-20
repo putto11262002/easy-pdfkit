@@ -177,18 +177,35 @@ export type TableColumn<T extends string> = {
 
 ## Headings
 
-Easy-PDFKit provides methods for creating headings of various sizes. The following example demonstrates how to create headings h1, h2, h3, h4, h5, and h6.
+Headings can be added to the document using the `heading` method, which accepts the heading text, heading level, and an optional `TextOptions` object. Currently supported heading levels are `h1`, `h2`, `h3`, `h4`, `h5`, and `h6`.
 
 ```typescript
+const doc = new PDFDoc();
 
+doc.heading("heading", "h1", { underline: true });
+doc.heading("sub heading", "h2");
+doc.heading("sub sub heading", "h3");
 ```
+
+The size and `TextOptions` for each heading level can be globally customized via the `headingConfig` option in the `PDFDoc` constructor.
+
+```typescript
+const doc = new PDFDoc({
+  headingConfig: {
+    h1: { size: 24 }, // Override h1 heading size
+    h2: { size: 22, textOptions: { underline: true } }, // Override h2 size and text options
+  },
+});
+```
+
+In future releases, custom heading levels will be supported.
 
 ## Formatters
 
-By default Easy-PDFKit comes with a built-in formatter which supports the following types: `string`, `number`, `date`, `boolean`, `null`, `undefined`. You can define custom formatters for other data types or override the default formatters by implementing the `Formatter` interface and passing the object to the `formatters` property of the `EasyPDFKit` constructor.
+Easy-PDFKit comes with a built-in formatter which supports the following types: `string`, `number`, `date`, `boolean`, `null`, `undefined`. You can define custom formatters for other data types or to override the default formatters by implementing the `Formatter` interface and passing the object to the `formatters` property of the `PDFDoc` constructor.
 
 ```typescript
-
+// Implementing default formatter for Point
 ```
 
 Although the type is define for the argument of the format function however, the value is not type checked. It is the responsibility of the developer to ensure that the value passed to the format function can in fact be formatted by the function.

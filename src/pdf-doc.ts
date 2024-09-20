@@ -4,7 +4,7 @@ import {
   DEFAULT_COLOR_PALETTE,
   DEFAULT_LINE_GAP,
   DEFAULT_MARGINS,
-  DEFAULT_TEXT_SIZES,
+  DEFAULT_HEADING_COFIG,
   SIZES,
 } from "./constant";
 import { renderTable, TableColumn, TableConfig, TableData } from "./tables";
@@ -18,26 +18,41 @@ export type VOptions = TextOptions & {
 
 export type TextSizes = "normal" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
-export type TextSizesMap = Record<
-  TextSizes,
-  {
-    size: number;
-  }
+export type DefaultHeading = "normal" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+
+// Generic type that allows dynamic keys and ensures the values match the required structure
+export type _HeadingConfig<T extends string> = Readonly<
+  Record<
+    T,
+    {
+      size: number;
+      textOptions?: TextOptions; // Adjust TextOptions based on your actual use case
+    }
+  >
+>;
+
+export type HeadingConfig<T extends string> = Readonly<
+  Record<
+    T,
+    {
+      size?: number;
+      textOptions?: TextOptions; // Adjust TextOptions based on your actual use case
+    }
+  >
 >;
 
 export type MultiTypeTextFormatter<T> = (value: T) => string | null;
 
-export type PDFDocOptions<
-  CV extends Exclude<unknown, Function> = DefaultMultiType,
-> = Omit<typeof options, ""> & {
+export type PDFDocOptions = Omit<typeof options, ""> & {
   size?: [number, number] | keyof typeof SIZES;
-  textSizes?: TextSizesMap;
+  headingConfig?: Partial<HeadingConfig<DefaultHeading>>;
   header?: string | { text: string; marginTop: number; marginBottom: number };
+
   // formatter?: MultiTypeTextFormatter<CV>;
 };
 
 type Options = Omit<typeof options, "margins" | "size"> & {
-  textSizes?: TextSizesMap;
+  headingConfig: _HeadingConfig<DefaultHeading>;
   size: [number, number];
   margins: {
     top: number;
@@ -69,9 +84,8 @@ export class PDFDoc<
   V extends CV | DefaultMultiType = CV | DefaultMultiType,
 > extends pdfDoc {
   options: Options;
-  currentLineGap: number = DEFAULT_LINE_GAP;
-  currentFontSize: number = DEFAULT_TEXT_SIZES.normal.size;
-  textSizes: TextSizesMap;
+  currentLineGap!: number;
+  currentFontSize!: number;
   private formatter?: MultiTypeTextFormatter<CV>;
   private defaultFormatters: MultiTypeTextFormatter<DefaultMultiType> =
     defaultMultiTypeTextFormatter;
@@ -79,7 +93,7 @@ export class PDFDoc<
     | { text: string; marginTop: number; marginBottom: number }
     | undefined;
 
-  constructor(options?: PDFDocOptions<CV>) {
+  constructor(options?: PDFDocOptions) {
     super({ ...options, autoFirstPage: false });
     this.options = {
       ...options,
@@ -97,12 +111,21 @@ export class PDFDoc<
             right: options.margin,
           }
         : options?.margins || DEFAULT_MARGINS,
+      headingConfig: Object.entries(DEFAULT_HEADING_COFIG).reduce(
+        (acc, [key, value]) => {
+          acc[key] = {
+            ...value,
+            ...options?.headingConfig?.[key as DefaultHeading],
+          };
+          return acc;
+        },
+        {} as any,
+      ),
     };
 
-    this.lineGap(this.currentLineGap);
-    this.fontSize(this.currentFontSize);
+    this.lineGap(DEFAULT_LINE_GAP);
+    this.fontSize(this.options.headingConfig.normal.size);
 
-    this.textSizes = options?.textSizes || DEFAULT_TEXT_SIZES;
     // this.formatter = options?.formatter;
 
     this.header =
@@ -185,10 +208,23 @@ export class PDFDoc<
 
   private _setFontSizeAndText(
     text: V,
-    xOrOpts: number | TextOptions | undefined,
-    y: number | undefined,
-    opts: TextOptions | undefined,
     fontSize: number,
+    opts?: TextOptions,
+  ): this;
+  private _setFontSizeAndText(
+    text: V,
+    fontSize: number,
+    x?: number,
+    y?: number,
+    opts?: TextOptions,
+  ): this;
+
+  private _setFontSizeAndText(
+    text: V,
+    fontSize: number,
+    xOrOpts?: number | TextOptions | undefined,
+    y?: number | undefined,
+    opts?: TextOptions | undefined,
   ): this {
     const prevFontSize = this.currentFontSize;
     this.fontSize(fontSize);
@@ -201,98 +237,38 @@ export class PDFDoc<
     return this;
   }
 
-  h1(text: V, opts?: TextOptions): this;
-  h1(text: V, x?: number, y?: number, opts?: TextOptions): this;
-  h1(text: V, xOrOpts?: number | TextOptions, y?: number, opts?: TextOptions) {
-    return this._setFontSizeAndText(
-      text,
-      xOrOpts,
-      y,
-      opts,
-      this.textSizes.h1.size,
-    );
-  }
-
-  h2(text: V, opts?: TextOptions): this;
-  h2(text: V, x?: number, y?: number, opts?: TextOptions): this;
-  h2(text: V, xOrOpts?: number | TextOptions, y?: number, opts?: TextOptions) {
-    return this._setFontSizeAndText(
-      text,
-      xOrOpts,
-      y,
-      opts,
-      this.textSizes.h2.size,
-    );
-  }
-
-  h3(text: V, opts?: TextOptions): this;
-  h3(text: V, x?: number, y?: number, opts?: TextOptions): this;
-
-  h3(text: V, xOrOpts?: number | TextOptions, y?: number, opts?: TextOptions) {
-    return this._setFontSizeAndText(
-      text,
-      xOrOpts,
-      y,
-      opts,
-      this.textSizes.h3.size,
-    );
-  }
-
-  h4(text: V, opts?: TextOptions): this;
-  h4(text: V, x?: number, y?: number, opts?: TextOptions): this;
-
-  h4(text: V, xOrOpts?: number | TextOptions, y?: number, opts?: TextOptions) {
-    return this._setFontSizeAndText(
-      text,
-      xOrOpts,
-      y,
-      opts,
-      this.textSizes.h4.size,
-    );
-  }
-
-  h5(text: V, opts?: TextOptions): this;
-  h5(text: V, x?: number, y?: number, opts?: TextOptions): this;
-
-  h5(text: V, xOrOpts?: number | TextOptions, y?: number, opts?: TextOptions) {
-    return this._setFontSizeAndText(
-      text,
-      xOrOpts,
-      y,
-      opts,
-      this.textSizes.h5.size,
-    );
-  }
-
-  h6(text: V, opts?: TextOptions): this;
-  h6(text: V, x?: number, y?: number, opts?: TextOptions): this;
-
-  h6(text: V, xOrOpts?: number | TextOptions, y?: number, opts?: TextOptions) {
-    return this._setFontSizeAndText(
-      text,
-      xOrOpts,
-      y,
-      opts,
-      this.textSizes.h6.size,
-    );
-  }
-
-  normal(text: V, opts?: TextOptions): this;
-  normal(text: V, x?: number, y?: number, opts?: TextOptions): this;
-
-  normal(
+  heading(text: V, level: DefaultHeading, opts?: TextOptions): this;
+  heading(
     text: V,
+    level: DefaultHeading,
+    x?: number,
+    y?: number,
+    opts?: TextOptions,
+  ): this;
+  heading(
+    text: V,
+    level: DefaultHeading,
     xOrOpts?: number | TextOptions,
     y?: number,
     opts?: TextOptions,
   ) {
-    return this._setFontSizeAndText(
-      text,
-      xOrOpts,
-      y,
-      opts,
-      this.textSizes.normal.size,
-    );
+    const headingConfig = this.options.headingConfig;
+    const config = headingConfig[level];
+    if (!config) {
+      throw new Error(`Heading ${level} not found in config`);
+    }
+    if (typeof xOrOpts === "number") {
+      this._setFontSizeAndText(text, config.size, xOrOpts, y, {
+        ...config.textOptions,
+        ...opts,
+      });
+    } else {
+      this._setFontSizeAndText(text, config.size, {
+        ...config.textOptions,
+        ...opts,
+      });
+    }
+    return this;
   }
 
   fontSize(size: number): this {

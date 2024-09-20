@@ -4,23 +4,16 @@ const doc = new PDFDoc({ header: "Header" });
 
 doc.pipe(fs.createWriteStream("output.pdf"));
 
-doc.h1("Headings", { underline: true });
+doc.heading("Headings", "h1", { underline: true });
+doc.heading("Heading 1", "h1");
+doc.heading("Heading 2", "h2");
+doc.heading("Heading 3", "h3");
+doc.heading("Heading 4", "h4");
+doc.heading("Heading 5", "h5");
+doc.heading("Heading 6", "h6");
+doc.heading("normal text", "normal");
 
-doc.h1("Heading 1");
-
-doc.h2("Heading 2");
-
-doc.h3("Heading 3");
-
-doc.h4("Heading 4");
-
-doc.h5("Heading 5");
-
-doc.h6("Heading 6");
-
-doc.normal("This is a paragraph");
-
-doc.moveDown().h1("Fixed Layout Table", { underline: true });
+doc.moveDown().heading("Fixed Layout Table", "h1", { underline: true });
 
 const data = [
   {
@@ -55,7 +48,7 @@ const data = [
   },
 ];
 
-doc.fixedLayoputTable(
+doc.table(
   {
     columns: [
       { key: "title", header: "Tite", colSpan: 2 },
