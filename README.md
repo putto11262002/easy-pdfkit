@@ -11,19 +11,47 @@ pnpm install easy-pdfkit
 ## Usage
 
 ```typescript
-import { EasyPDFKit } from "easy-pdfkit";
-// Define custom formatters
-const doc = new EasyPDFKit();
+import { PDFDoc } from "easy-pdfkit";
+import fs from "fs";
 
-// Add a heading to the document
-doc.heading("Hello, World!", 1);
-doc.heading("This is a PDF document", 2);
+const doc = new PDFDoc({
+  header: "Example Doc", // Add header to every page
+});
 
-// Add
+doc.pipe(fs.createWriteStream("example.output.pdf"));
+
+// Add headings of different levels
+doc.heading("Heading", "h1");
+doc.heading("Sub Heading", "h2");
 
 // Add table
+doc.table(
+  {
+    columns: [
+      { key: "name", header: "Name" },
+      { key: "email", header: "Email" },
+      { key: "dateOfBirth", header: "Date Of Birth" },
+    ] as const,
+  },
+  [
+    {
+      name: "John Doe",
+      email: "john.doe@example.com",
+      dateOfBirth: new Date("1990-05-10"),
+    },
+    {
+      name: "Jane Smith",
+      email: "jane.smith@example.com",
+      dateOfBirth: new Date("1985-09-15"),
+    },
+  ],
+);
 
-//
+// Using built-in formatter to add non-string data
+doc.multiTypeText(new Date()); // -> 9/20/2024
+doc.multiTypeText(true); // -> Yes
+
+doc.end();
 ```
 
 ## Tables
@@ -31,6 +59,8 @@ doc.heading("This is a PDF document", 2);
 This section demonstrates how to create tables using Easy-PDFKit. Currently, the library supports only fixed-layout tables. Support for auto-layout tables is still under development.
 
 Tables can be created using the table method, which accepts a TableConfig object and an array of data objects. The data objects must match the structure defined in the columns property of the TableConfig.
+
+If the table content exceeds the available space on the current page, Easy-PDFKit will automatically insert a page break and continue the table on the next page.
 
 ```typescript
 const doc = new EasyPDFKit();
@@ -50,7 +80,7 @@ doc.table(
 );
 ```
 
-Type definition for `TableConfig`:
+### Type definition for `TableConfig`:
 
 ```typescript
 /**
@@ -202,13 +232,107 @@ In future releases, custom heading levels will be supported.
 
 ## Formatters
 
-Easy-PDFKit comes with a built-in formatter which supports the following types: `string`, `number`, `date`, `boolean`, `null`, `undefined`. You can define custom formatters for other data types or to override the default formatters by implementing the `Formatter` interface and passing the object to the `formatters` property of the `PDFDoc` constructor.
+Easy-PDFKit includes a built-in formatter that supports the following types: `string`, `number`, `date`, `boolean`, `null`, and `undefined`. You can also define custom formatters for other data types or override the default formatters by implementing the `MultiTypeTextFormatter` interface and passing it to the `formatter` property in the `PDFDoc` constructor.
 
 ```typescript
-// Implementing default formatter for Point
+const doc = new PDFDoc({});
+
+doc.multiTypeText(false); // -> No
+doc.multiTypeText(123); // -> 123
+doc.multiTypeText(new Date()); // -> 9/20/2024 (formatted date)
 ```
 
-Although the type is define for the argument of the format function however, the value is not type checked. It is the responsibility of the developer to ensure that the value passed to the format function can in fact be formatted by the function.
+### Default Formatter Implementation
+
+The default formatter is implemented as follows:
+
+```typescript
+function defaultMultiTypeTextFormatter(value: DefaultMultiType): string | null {
+  if (value === undefined || value === null) return "-";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value instanceof Date) return value.toLocaleDateString();
+  if (typeof value === "number") return value.toString();
+  if (typeof value === "string") return value;
+  return null;
+}
+```
+
+### Creating Custom Formatters
+
+When writing a custom formatter, although you define the argument type for the formatter function, the value is **not type-checked at runtime**. It's up to the developer to ensure the value passed to the formatter matches the expected type. If the value cannot be formatted, the formatter should return `null` to signal that the default formatter should be used as a fallback.
+
+#### Example: Custom Formatter for a Single Type
+
+Here's an example of a custom formatter for a `Point` type, which represents a 2D point.
+
+```typescript
+class Point {
+  constructor(
+    public x: number,
+    public y: number,
+  ) {}
+}
+
+// Implement custom formatter for the Point class
+const customFormatter: MultiTypeTextFormatter<Point> = (value) => {
+  if (value instanceof Point) {
+    return `(${value.x}, ${value.y})`;
+  }
+  // Return null if the value cannot be formatted
+  return null;
+};
+
+const doc = new PDFDoc({
+  formatter: customFormatter,
+});
+
+doc.multiTypeText(new Point(0, 0)); // -> (0, 0)
+doc.multiTypeText(new Point(1, 1)); // -> (1, 1)
+```
+
+#### Example: Custom Formatter for Multiple Types
+
+Here's an example of a custom formatter that supports both `Passenger` and `Flight` types.
+
+```typescript
+class Flight {
+  constructor(
+    public flightNum: string,
+    public origin: string,
+    public destination: string,
+  ) {}
+}
+
+class Passenger {
+  constructor(
+    public name: string,
+    public seatNum: string,
+    public flight: Flight,
+  ) {}
+}
+
+// Implement custom formatter for Passenger and Flight classes
+const customFormatter: MultiTypeTextFormatter<Passenger | Flight> = (value) => {
+  if (value instanceof Passenger) {
+    return `${value.name} seated at ${value.seatNum} on flight ${value.flight.flightNum}`;
+  }
+  if (value instanceof Flight) {
+    return `Flight ${value.flightNum} from ${value.origin} to ${value.destination}`;
+  }
+  // Return null if the value cannot be formatted
+  return null;
+};
+
+const doc = new PDFDoc({
+  formatter: customFormatter,
+});
+
+const flight = new Flight("BA123", "LHR", "JFK");
+const passenger = new Passenger("John Doe", "1A", flight);
+
+doc.multiTypeText(flight); // -> Flight BA123 from LHR to JFK
+doc.multiTypeText(passenger); // -> John Doe seated at 1A on flight BA123
+```
 
 ## PDFKit
 

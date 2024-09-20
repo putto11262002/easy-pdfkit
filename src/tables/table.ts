@@ -1,4 +1,4 @@
-import type { DefaultMultiType, PDFDoc } from "../pdf-doc";
+import type { DefaultMultiType, MultiTypeValue, PDFDoc } from "../pdf-doc";
 import { DEFAULT_TABLE_STATIC_CONFIG } from "./default";
 import { renderFixedLayoutTable } from "./fixed-layout-table";
 
@@ -137,25 +137,21 @@ export type _TableConfig<T extends readonly TableColumn<string>[]> = {
   layout: "auto" | "fixed";
 };
 
-export type TableCellValue<
-  CV,
-  V extends CV | DefaultMultiType = CV | DefaultMultiType,
-> = V;
+export type TableCellValue<V> = MultiTypeValue<V>;
 
-export type TableData<
-  T extends readonly TableColumn<string>[],
-  CV,
-  V extends CV | DefaultMultiType = CV | DefaultMultiType,
-> = Record<TableKeys<T>, TableCellValue<CV, V>>[];
+export type TableData<T extends readonly TableColumn<string>[], V> = Record<
+  TableKeys<T>,
+  TableCellValue<V>
+>[];
 
-export function renderTable<T extends readonly TableColumn<string>[], CV>({
+export function renderTable<T extends readonly TableColumn<string>[], V>({
   doc,
   config: _config,
   data,
 }: {
-  doc: PDFDoc<CV>;
+  doc: PDFDoc<V>;
   config: TableConfig<T>;
-  data: TableData<T, CV>;
+  data: TableData<T, V>;
 }): void {
   const config = mergeOptions(_config, {
     ...DEFAULT_TABLE_STATIC_CONFIG,

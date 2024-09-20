@@ -43,12 +43,12 @@ export type HeadingConfig<T extends string> = Readonly<
 
 export type MultiTypeTextFormatter<T> = (value: T) => string | null;
 
-export type PDFDocOptions = Omit<typeof options, ""> & {
+export type PDFDocOptions<V> = Omit<typeof options, ""> & {
   size?: [number, number] | keyof typeof SIZES;
   headingConfig?: Partial<HeadingConfig<DefaultHeading>>;
   header?: string | { text: string; marginTop: number; marginBottom: number };
 
-  // formatter?: MultiTypeTextFormatter<CV>;
+  formatter?: MultiTypeTextFormatter<V>;
 };
 
 type Options = Omit<typeof options, "margins" | "size"> & {
@@ -61,6 +61,8 @@ type Options = Omit<typeof options, "margins" | "size"> & {
     right: number;
   };
 };
+
+export type MultiTypeValue<V> = V | DefaultMultiType;
 
 export type DefaultMultiType =
   | string
@@ -79,21 +81,18 @@ function defaultMultiTypeTextFormatter(value: DefaultMultiType): string | null {
   return null;
 }
 
-export class PDFDoc<
-  CV = DefaultMultiType,
-  V extends CV | DefaultMultiType = CV | DefaultMultiType,
-> extends pdfDoc {
+export class PDFDoc<V = DefaultMultiType> extends pdfDoc {
   options: Options;
   currentLineGap!: number;
   currentFontSize!: number;
-  private formatter?: MultiTypeTextFormatter<CV>;
+  private formatter?: MultiTypeTextFormatter<V>;
   private defaultFormatters: MultiTypeTextFormatter<DefaultMultiType> =
     defaultMultiTypeTextFormatter;
   private header:
     | { text: string; marginTop: number; marginBottom: number }
     | undefined;
 
-  constructor(options?: PDFDocOptions) {
+  constructor(options?: PDFDocOptions<V>) {
     super({ ...options, autoFirstPage: false });
     this.options = {
       ...options,
@@ -126,7 +125,7 @@ export class PDFDoc<
     this.lineGap(DEFAULT_LINE_GAP);
     this.fontSize(this.options.headingConfig.normal.size);
 
-    // this.formatter = options?.formatter;
+    this.formatter = options?.formatter;
 
     this.header =
       typeof options?.header === "string"
@@ -168,10 +167,10 @@ export class PDFDoc<
     }
   }
 
-  formatText(text: V): string {
+  formatText(text: MultiTypeValue<V>): string {
     let output: string | null = null;
     if (this.formatter) {
-      output = this.formatter(text as unknown as CV);
+      output = this.formatter(text as unknown as V);
     }
     if (output === null) {
       output = this.defaultFormatters(text as DefaultMultiType);
@@ -182,11 +181,16 @@ export class PDFDoc<
     return output;
   }
 
-  multiTypeText(text: V, opts?: VOptions): this;
-  multiTypeText(text: V, x?: number, y?: number, opts?: VOptions): this;
+  multiTypeText(text: MultiTypeValue<V>, opts?: VOptions): this;
+  multiTypeText(
+    text: MultiTypeValue<V>,
+    x?: number,
+    y?: number,
+    opts?: VOptions,
+  ): this;
 
   multiTypeText(
-    text: V,
+    text: MultiTypeValue<V>,
     xOrOpts?: number | VOptions,
     y?: number,
     opts?: VOptions,
@@ -207,12 +211,12 @@ export class PDFDoc<
   }
 
   private _setFontSizeAndText(
-    text: V,
+    text: MultiTypeValue<V>,
     fontSize: number,
     opts?: TextOptions,
   ): this;
   private _setFontSizeAndText(
-    text: V,
+    text: MultiTypeValue<V>,
     fontSize: number,
     x?: number,
     y?: number,
@@ -220,7 +224,7 @@ export class PDFDoc<
   ): this;
 
   private _setFontSizeAndText(
-    text: V,
+    text: MultiTypeValue<V>,
     fontSize: number,
     xOrOpts?: number | TextOptions | undefined,
     y?: number | undefined,
@@ -237,16 +241,20 @@ export class PDFDoc<
     return this;
   }
 
-  heading(text: V, level: DefaultHeading, opts?: TextOptions): this;
   heading(
-    text: V,
+    text: MultiTypeValue<V>,
+    level: DefaultHeading,
+    opts?: TextOptions,
+  ): this;
+  heading(
+    text: MultiTypeValue<V>,
     level: DefaultHeading,
     x?: number,
     y?: number,
     opts?: TextOptions,
   ): this;
   heading(
-    text: V,
+    text: MultiTypeValue<V>,
     level: DefaultHeading,
     xOrOpts?: number | TextOptions,
     y?: number,
@@ -311,8 +319,8 @@ export class PDFDoc<
 
   table<T extends readonly TableColumn<string>[]>(
     config: TableConfig<T>,
-    data: TableData<T, CV>,
+    data: TableData<T, V>,
   ) {
-    renderTable<T, CV>({ doc: this, config, data });
+    renderTable<T, V>({ doc: this, config, data });
   }
 }
