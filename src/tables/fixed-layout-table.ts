@@ -1,15 +1,11 @@
 import { _TableConfig, TableCellValue, TableColumn, TableData } from "./table";
-import type { DefaultMultiType, PDFDoc, TextOptions } from "../pdf-doc";
+import type { PDFDoc, TextOptions } from "../pdf-doc";
 import { sortObjectsByKeyOrder } from "./utils";
 
-type Table<
-  T extends readonly TableColumn<string>[],
-  CV,
-  V extends CV | DefaultMultiType = CV | DefaultMultiType,
-> = {
+type Table<T extends readonly TableColumn<string>[], V> = {
   opts: _TableConfig<T>;
-  doc: PDFDoc<CV>;
-  data: TableData<T, CV, V>;
+  doc: PDFDoc<V>;
+  data: TableData<T, V>;
   columnsY: number[];
   columnsWidth: number[];
   rowX: number;
@@ -18,19 +14,19 @@ type Table<
 
 export function renderFixedLayoutTable<
   T extends readonly TableColumn<string>[],
-  CV,
+  V,
 >({
   doc,
   config,
   data,
 }: {
-  doc: PDFDoc<CV>;
+  doc: PDFDoc<V>;
   config: _TableConfig<T>;
-  data: TableData<T, CV>;
+  data: TableData<T, V>;
 }) {
   const columnsWidth = getColumnWidths(config.columns, config.width);
 
-  const table: Table<T, CV> = {
+  const table: Table<T, V> = {
     opts: config,
     data,
     columnsY: getColumnsY(columnsWidth, config.x),
@@ -41,7 +37,7 @@ export function renderFixedLayoutTable<
   };
 
   if (config.header) {
-    renderRow<T, CV>({
+    renderRow<T, V>({
       table,
       cells: table.opts.columns.map((column) => column.header || column.key),
     });
@@ -59,6 +55,9 @@ export function renderFixedLayoutTable<
     });
   });
 
+  doc.x = table.rowX;
+  doc.y = table.rowY;
+
   doc.moveDown();
 }
 
@@ -74,11 +73,7 @@ function getColumnsY(columnWidth: number[], offset?: number) {
   return columnX;
 }
 
-function getRowHeight<
-  T extends readonly TableColumn<string>[],
-  CV,
-  V extends CV | DefaultMultiType,
->({
+function getRowHeight<T extends readonly TableColumn<string>[], V>({
   tableOpts,
   cells,
   columnsWidth,
@@ -86,12 +81,12 @@ function getRowHeight<
   formatText,
   heightOfString,
 }: {
-  cells: TableCellValue<CV, V>[];
+  cells: TableCellValue<V>[];
   tableOpts: _TableConfig<T>;
   columnsWidth: number[];
   x: number;
   heightOfString: (s: string, opts?: TextOptions) => number;
-  formatText: (s: V) => string;
+  formatText: (s: TableCellValue<V>) => string;
 }) {
   // determine row height by finding the tallest cell
   const rowX: number = x;
@@ -119,29 +114,21 @@ function getRowHeight<
   return maxHeight;
 }
 
-function heightOfStringClosur<CV, V extends CV | DefaultMultiType>(
-  doc: PDFDoc<CV, V>,
-) {
+function heightOfStringClosur<V>(doc: PDFDoc<V>) {
   return (s: string, opts?: TextOptions) =>
     doc.heightOfStringWithoutTailingLineGap(s, opts);
 }
 
-function formatTextCloser<CV, V extends CV | DefaultMultiType>(
-  doc: PDFDoc<CV, V>,
-) {
-  return (v: TableCellValue<CV, V>) => doc.formatText(v);
+function formatTextCloser<V>(doc: PDFDoc<V>) {
+  return (v: TableCellValue<V>) => doc.formatText(v);
 }
 
-function renderRow<
-  T extends readonly TableColumn<string>[],
-  CV,
-  V extends CV | DefaultMultiType = CV | DefaultMultiType,
->({
+function renderRow<T extends readonly TableColumn<string>[], V>({
   cells,
   table,
 }: {
-  cells: TableCellValue<CV, V>[];
-  table: Table<T, CV, V>;
+  cells: TableCellValue<V>[];
+  table: Table<T, V>;
 }) {
   const rowHeight = getRowHeight({
     x: table.rowX,
