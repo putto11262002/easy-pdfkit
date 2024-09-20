@@ -56,11 +56,11 @@ doc.end();
 
 ## Tables
 
-This section demonstrates how to create tables using Easy-PDFKit. Currently, the library supports only fixed-layout tables. Support for auto-layout tables is still under development.
-
 Tables can be created using the table method, which accepts a TableConfig object and an array of data objects. The data objects must match the structure defined in the columns property of the TableConfig.
 
 If the table content exceeds the available space on the current page, Easy-PDFKit will automatically insert a page break and continue the table on the next page.
+
+Currently, the library supports only fixed-layout tables. Support for auto-layout tables is still under development.
 
 ```typescript
 const doc = new EasyPDFKit();
