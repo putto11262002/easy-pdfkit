@@ -1,5 +1,4 @@
-import PDFKitFont from "pdfkit/js/mixins/fonts";
-import pdfDoc, { options, text } from "pdfkit";
+import pdfkit from "pdfkit";
 import {
   DEFAULT_COLOR_PALETTE,
   DEFAULT_LINE_GAP,
@@ -9,12 +8,7 @@ import {
 } from "./constant";
 import { renderTable, TableColumn, TableConfig, TableData } from "./tables";
 
-export type TextOptions = Exclude<Parameters<typeof text>[1], undefined>;
-
-export type VOptions = TextOptions & {
-  fontSize?: number;
-  font?: typeof PDFKitFont;
-};
+export type TextOptions = Exclude<Parameters<typeof pdfkit.text>[1], undefined>;
 
 export type TextSizes = "normal" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
@@ -43,7 +37,7 @@ export type HeadingConfig<T extends string> = Readonly<
 
 export type MultiTypeTextFormatter<T> = (value: T) => string | null;
 
-export type PDFDocOptions<V> = Omit<typeof options, ""> & {
+export type PDFDocOptions<V> = Omit<typeof pdfkit.options, ""> & {
   size?: [number, number] | keyof typeof SIZES;
   headingConfig?: Partial<HeadingConfig<DefaultHeading>>;
   header?: string | { text: string; marginTop: number; marginBottom: number };
@@ -51,7 +45,7 @@ export type PDFDocOptions<V> = Omit<typeof options, ""> & {
   formatter?: MultiTypeTextFormatter<V>;
 };
 
-type Options = Omit<typeof options, "margins" | "size"> & {
+type Options = Omit<typeof pdfkit.options, "margins" | "size"> & {
   headingConfig: _HeadingConfig<DefaultHeading>;
   size: [number, number];
   margins: {
@@ -81,7 +75,7 @@ function defaultMultiTypeTextFormatter(value: DefaultMultiType): string | null {
   return null;
 }
 
-export class PDFDoc<V = DefaultMultiType> extends pdfDoc {
+export class PDFDoc<V = DefaultMultiType> extends pdfkit {
   options: Options;
   currentLineGap!: number;
   currentFontSize!: number;
@@ -181,19 +175,19 @@ export class PDFDoc<V = DefaultMultiType> extends pdfDoc {
     return output;
   }
 
-  multiTypeText(text: MultiTypeValue<V>, opts?: VOptions): this;
+  multiTypeText(text: MultiTypeValue<V>, opts?: TextOptions): this;
   multiTypeText(
     text: MultiTypeValue<V>,
     x?: number,
     y?: number,
-    opts?: VOptions,
+    opts?: TextOptions,
   ): this;
 
   multiTypeText(
     text: MultiTypeValue<V>,
-    xOrOpts?: number | VOptions,
+    xOrOpts?: number | TextOptions,
     y?: number,
-    opts?: VOptions,
+    opts?: TextOptions,
   ) {
     const formattedText = this.formatText(text);
     if (typeof xOrOpts === "number") {

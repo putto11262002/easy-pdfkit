@@ -11,6 +11,9 @@ const config = [
         format: "umd",
         name: "easy-pdfkit",
         sourcemap: true,
+        globals: {
+          pdfkit: "pdfkit",
+        },
       },
       {
         file: "dist/bundle.esm.js",
