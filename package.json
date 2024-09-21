@@ -20,7 +20,7 @@
   "files": [
     "dist"
   ],
-  "version": "0.1.9",
+  "version": "0.1.12",
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js -w"
@@ -32,7 +32,6 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/node": "^22.5.4",
-    "@types/pdfkit": "^0.13.4",
     "rimraf": "^6.0.1",
     "rollup": "^4.21.2",
     "rollup-plugin-dts": "^6.1.1",
@@ -40,6 +39,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "pdfkit": "^0.15.0"
+    "pdfkit": "^0.15.0",
+    "@types/pdfkit": "^0.13.4"
   }
 }
