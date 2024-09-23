@@ -229,6 +229,7 @@ export class PDFDoc<V = DefaultMultiType> extends pdfkit {
     if (typeof xOrOpts === "number") {
       this.multiTypeText(text, xOrOpts, y, opts);
     } else {
+      console.log("opts in setFontSizeAndText", xOrOpts);
       this.multiTypeText(text, xOrOpts);
     }
     this.fontSize(prevFontSize);
@@ -265,9 +266,14 @@ export class PDFDoc<V = DefaultMultiType> extends pdfkit {
         ...opts,
       });
     } else {
+      console.log("in heading", {
+        opts: xOrOpts,
+        config: config.textOptions,
+        combined: { ...config.textOptions, ...xOrOpts },
+      });
       this._setFontSizeAndText(text, config.size, {
         ...config.textOptions,
-        ...opts,
+        ...xOrOpts,
       });
     }
     return this;
@@ -283,7 +289,7 @@ export class PDFDoc<V = DefaultMultiType> extends pdfkit {
     return this.options.margins.left;
   }
 
-  getMarginAddedZeroY() {
+  getMarginAdjustedZeroY() {
     return this.options.margins.top;
   }
 
