@@ -170,14 +170,15 @@ function mergeOptions<T extends readonly TableColumn<string>[]>(
   return {
     ...defaults,
     ...input,
-    cellPaddings:
-      typeof input.cellPaddings === "number"
+    cellPaddings: input.cellPaddings
+      ? typeof input.cellPaddings === "number"
         ? {
             top: input.cellPaddings,
             right: input.cellPaddings,
             bottom: input.cellPaddings,
             left: input.cellPaddings,
           }
-        : defaults.cellPaddings,
+        : input.cellPaddings
+      : defaults.cellPaddings,
   };
 }
